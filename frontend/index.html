@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Test</title>
+    <script src="https://cdn.plot.ly/plotly-2.25.2.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        header {
+            background-color: #4caf50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+        main {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        form {
+            margin-bottom: 0; /* Remove a margem inferior do formulário */
+        }
+        .input-field {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #graph {
+            margin-top: 30px;
+            width: 100%;
+            height: 600px;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #4caf50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        footer {
+            background-color: #4caf50;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 10px; /* Ajuste da margem superior */
+        }
+        footer a {
+            color: white;
+            text-decoration: underline;
+        }
+        footer a:hover {
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Questionario modos de conhecer o mundo</h1>
+    </header>
+    <main>
+        <p>Este questionário foi criado para identificar suas preferências e perspectivas em relação aos modos de conhecer o mundo sendo eles: <strong>Racionalismo, Empirismo, Objetivismo, Relativismo e Pragmatismo.</strong></p>
+        <p>Responda às perguntas de forma sincera para que possamos gerar um perfil baseado nas suas escolhas.</p>
+        <p>O resultado será exibido em um <strong>gráfico 3D interativo. </strong></p>
+
+        <form id="questionnaire">
+            <div class="input-field">
+                <label for="name">Nome:</label>
+                <input type="text" id="name" name="name" placeholder="Digite seu nome" required>
+            </div>
+            <div class="input-field">
+                <label for="age">Ano de nascimento:</label>
+                <input type="number" id="age" name="age" placeholder="Digite o ano em que você nasceu" required>
+            </div>
+            <div class="input-field">
+                <label for="course">Curso:</label>
+                <input type="text" id="course" name="course" placeholder="Digite o curso que você está cursando ou já cursou" required>
+            </div>
+
+            <div id="questions-container"></div>
+            <button type="submit">Enviar Respostas</button>
+        </form>
+        <div id="graph"></div>
+    </main>
+
+    <footer>
+        <p>Projeto idealizado e desenvolvido por <strong>Caio</strong>, aluno da <a href="https://ufmg.br/" target="_blank">UFMG</a> do curso de <a href="https://filosofia.fafich.ufmg.br/" target="_blank">Filosofia</a> e orientado por <strong>André</strong>, professor da disciplina de Teoria do Conhecimento.</p>
+        <p>Contatos:</p>
+        <ul>
+            <li>Caio: <a href="mailto:academic@caiounderscore.xyz">academic@caiounderscore.xyz</a></li>
+            <li>André Abath: <a href="mailto:andreabath@gmail.com">andreabath@gmail.com</a></li>
+        </ul>
+    </footer>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        const backendUrl = "https://cs6jmovrxb.execute-api.us-east-1.amazonaws.com/api"; // Substitua pela URL do seu backend
+
+        async function fetchQuestions() {
+            const response = await fetch(`${backendUrl}/get-questions`);
+            const data = await response.json();
+            return data.questions;
+        }
+
+        function renderQuestions(questions) {
+            const container = document.getElementById("questions-container");
+            container.innerHTML = ""; // Limpa o container
+
+            questions.forEach(question => {
+                const questionDiv = document.createElement("div");
+                questionDiv.className = "question";
+                questionDiv.innerHTML = `
+                    <label for="question-${question.id}">${question.question}</label>
+                    <select name="question-${question.id}" id="question-${question.id}" required>
+                        <option value="" disabled selected>Selecione uma opção</option>
+                        <option value="0">Discordo totalmente</option>
+                        <option value="25">Discordo parcialmente</option>
+                        <option value="50">Neutro/Indiferente</option>
+                        <option value="75">Concordo parcialmente</option>
+                        <option value="100">Concordo totalmente</option>
+                    </select>
+                `;
+                container.appendChild(questionDiv);
+            });
+        }
+
+        async function submitAnswers(event) {
+            event.preventDefault();
+
+            const loadingOverlay = document.getElementById("loading-overlay");
+            loadingOverlay.style.display = "flex";
+
+            try {
+                const name = document.getElementById("name").value;
+                const age = document.getElementById("age").value;
+                const course = document.getElementById("course").value;
+
+                const form = document.getElementById("questionnaire");
+                const formData = new FormData(form);
+
+                const answers = [];
+                formData.forEach((value, key) => {
+                    if (key.startsWith("question-")) {
+                        const questionId = parseInt(key.split("-")[1], 10);
+                        const score = parseInt(value, 10);
+                        answers.push({ id: questionId, score });
+                    }
+                });
+
+                const body = {
+                    interviewed: { name, age, course },
+                    answers
+                };
+
+                const response = await fetch(`${backendUrl}/process-answers`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
+
+                const scores = await response.json();
+                render3DGraph(scores);
+            } catch (error) {
+                console.error("Erro ao enviar respostas:", error);
+            } finally {
+                loadingOverlay.style.display = "none";
+            }
+        }
+
+        function render3DGraph(scores) {
+            const participantTrace = {
+                x: [scores.x],
+                y: [scores.y],
+                z: [scores.z],
+                mode: "markers",
+                marker: {
+                    size: 10,
+                    color: "blue",
+                    symbol: "circle"
+                },
+                type: "scatter3d",
+                name: "Você"
+            };
+
+            const labelsTrace = {
+                x: [100, 0, 50, 50, 50, 50],
+                y: [50, 50, 100, 0, 50, 50],
+                z: [50, 50, 50, 50, 100, 0],
+                mode: "text",
+                text: ["Racionalismo", "Empirismo", "Objetivismo", "Relativismo", "", "Pragmatista"],
+                textfont: {
+                    size: 10,
+                    color: "black"
+                },
+                type: "scatter3d"
+            };
+
+            const axisLinesTrace = {
+                x: [50, 100, 50, 0, null, 50, 50, null, 50, 50, null, 50, 50],
+                y: [50, 50, 50, 50, null, 50, 100, null, 50, 0, null, 50, 50],
+                z: [50, 50, 50, 50, null, 50, 50, null, 50, 50, null, 100, 0],
+                mode: "lines",
+                line: {
+                    color: "gray",
+                    dash: "dash",
+                    width: 1
+                },
+                type: "scatter3d",
+                name: "Eixos Tracejados"
+            };
+
+            const layout = {
+                scene: {
+                    camera: {
+                        eye: { x: 1.5, y: 1.5, z: 1.5 }
+                    }
+                },
+                title: "Mapa 3D: Modos de Conhecer o Mundo",
+                width: 800,
+                height: 700
+            };
+
+            const data = [participantTrace, labelsTrace, axisLinesTrace];
+            Plotly.newPlot("graph", data, layout);
+        }
+
+        document.getElementById("questionnaire").addEventListener("submit", submitAnswers);
+
+        (async function init() {
+            const questions = await fetchQuestions();
+            renderQuestions(questions);
+        })();
+    </script>
+</body>
+</html>
+
+
